@@ -157,7 +157,7 @@ function registerAutoMockCommands() {
           return {
             status: mock.status,
             statusText: mock.statusText,
-            response: JSON.stringify(mock.response)
+            response: mock.response,
           };
         }
 
