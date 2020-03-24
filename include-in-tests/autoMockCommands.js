@@ -187,7 +187,7 @@ function registerAutoMockCommands() {
                   method: xhr.method,
                   path: parseUri(xhr.url).path,
                   query: parseUri(xhr.url).query,
-                  request: requestObject,
+                  requestBody: request.requestBody,
                   response: responseObject,
                   status: xhr.status,
                   statusText: xhr.statusText,
@@ -300,7 +300,7 @@ function registerAutoMockCommands() {
       path = parseUri(api.url).path;
     }
 
-    return api.method + "." + path;
+    return api.method + "." + path + api.requestBody;
   }
 
   // (c) Steven Levithan <stevenlevithan.com>
