@@ -296,11 +296,13 @@ function registerAutoMockCommands() {
 
   function getApiKey(api) {
     let path = api.path;
+    let query = api.query;
     if (api.url) {
       path = parseUri(api.url).path;
+      query = parseUri(api.url).query || '';
     }
 
-    return api.method + "." + path + api.requestBody;
+    return api.method + "." + path + query + api.requestBody;
   }
 
   // (c) Steven Levithan <stevenlevithan.com>
