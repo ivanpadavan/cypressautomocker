@@ -92,31 +92,11 @@ function registerAutoMockCommands() {
     automocker.isMocking = false;
   });
 
-  // not implemented for now
-  //
-  // Cypress.Commands.add("inspectRequests", (param1, param2) => {
-  //   if (automocker.isRecording) {
-  //     return; // no-op for now when using live server
-  //   }
-  //   let mockedRequests = testServerAPI.mockedRequests();
-  //   let testFunction;
-
-  //   if (typeof param1 === "function") {
-  //     testFunction = param1;
-  //   } else {
-  //     testFunction = param2;
-  //     mockedRequests = mockedRequests.filter(val => {
-  //       return val.apiKey.indexOf(param1) !== -1;
-  //     });
-  //   }
-  //   testFunction(mockedRequests);
-  // });
-
   Cypress.Commands.add("automockWaitOnPendingAPIs", () => {
     return new Cypress.Promise((resolve, reject) => {
       if (pendingApiCount) {
         console.log("waiting on APIs to complete");
-        completedPendingRequestsFunc = function() {
+        completedPendingRequestsFunc = function () {
           resolve();
         };
       } else {
@@ -162,81 +142,86 @@ function registerAutoMockCommands() {
         }
 
       } else if (automocker.isRecording) {
-        function prepareOnLoadHandler(xhr) {
-          (function() {
-            const old_onload = xhr.onload;
-            const url = xhr.url;
-            const method = xhr.method;
+        const old_onload = request.onload;
+        const url = request.url;
+        const method = request.method;
 
-            xhr.onload = () => {
-              function recordTransformedObject(
-                xhr,
-                requestObject,
-                responseObject
-              ) {
-                let contentType = xhr.getResponseHeader("content-type");
-                if (
-                  contentType !== null &&
-                  contentType.toLowerCase().indexOf("application/json") !== -1
-                ) {
-                  try {
-                    responseObject = JSON.parse(responseObject);
-                  } catch (e) {}
-                }
-                let transformedObject = {
-                  method: xhr.method,
-                  path: parseUri(xhr.url).path,
-                  query: parseUri(xhr.url).query,
-                  requestBody: request.requestBody,
-                  response: responseObject,
-                  status: xhr.status,
-                  statusText: xhr.statusText,
-                  contentType: contentType
-                };
-                recordedApis.push(transformedObject);
-              }
-
-              if (old_onload) {
-                old_onload();
-              }
-              let parsed = parseUri(url);
-              let query = "";
-              var blobResponseObject = null;
-
-              console.log("RECORD: " + url);
-
-              if (typeof xhr.object.response === "object") {
-                var fr = new FileReader();
-                fr.onload = function(e) {
-                  var blobText = e.target.result;
-                  blobResponseObject = JSON.parse(blobText);
-                  let requestObject = xhr.request
-                    ? JSON.parse(JSON.stringify(xhr.request))
-                    : "";
-                  let responseObject;
-                  if (!blobResponseObject) {
-                    responseObject = xhr.response
-                      ? JSON.parse(JSON.stringify(xhr.response))
-                      : "";
-                  } else {
-                    responseObject = blobResponseObject;
-                  }
-                  recordTransformedObject(xhr, requestObject, responseObject);
-                };
-                fr.readAsText(xhr.object.response);
-              } else {
-                let requestObject = xhr.request
-                  ? JSON.parse(JSON.stringify(xhr.request))
-                  : "";
-                let responseObject = xhr.response
-                  ? JSON.parse(JSON.stringify(xhr.response))
-                  : "";
-                recordTransformedObject(xhr, requestObject, responseObject);
-              }
-            };
-          })();
+        function recordTransformedObject(
+          request,
+          requestObject,
+          responseObject
+        ) {
+          let contentType = request.getResponseHeader("content-type");
+          if (
+            contentType !== null &&
+            contentType.toLowerCase().indexOf("application/json") !== -1
+          ) {
+            try {
+              responseObject = JSON.parse(responseObject);
+            } catch (e) {
+            }
+          }
+          let transformedObject = {
+            method: request.method,
+            path: parseUri(request.url).path,
+            query: parseUri(request.url).query,
+            requestBody: request.requestBody,
+            response: responseObject,
+            status: request.status,
+            statusText: request.statusText,
+            contentType: contentType,
+            readyState: request.object.readyState,
+          };
+          recordedApis.push(transformedObject);
         }
-        prepareOnLoadHandler(request);
+
+        request.onabort = (e) => {
+          console.log("RECORD ABORT: " + url);
+
+          let requestObject = request.request
+            ? JSON.parse(JSON.stringify(request.request))
+            : "";
+          recordTransformedObject(request, requestObject, null);
+        };
+
+        request.onload = () => {
+
+          if (old_onload) {
+            old_onload();
+          }
+          var blobResponseObject = null;
+
+          console.log("RECORD: " + url);
+
+          if (typeof request.object.response === "object") {
+            var fr = new FileReader();
+            fr.onload = function (e) {
+              var blobText = e.target.result;
+              blobResponseObject = JSON.parse(blobText);
+              let requestObject = request.request
+                ? JSON.parse(JSON.stringify(request.request))
+                : "";
+              let responseObject;
+              if (!blobResponseObject) {
+                responseObject = request.response
+                  ? JSON.parse(JSON.stringify(request.response))
+                  : "";
+              } else {
+                responseObject = blobResponseObject;
+              }
+              recordTransformedObject(request, requestObject, responseObject);
+            };
+            fr.readAsText(request.object.response);
+          } else {
+            let requestObject = request.request
+              ? JSON.parse(JSON.stringify(request.request))
+              : "";
+            let responseObject = request.response
+              ? JSON.parse(JSON.stringify(request.response))
+              : "";
+            recordTransformedObject(request, requestObject, responseObject);
+          }
+        };
       }
       if (automocker.isMocking) {
         console.log(
@@ -247,7 +232,8 @@ function registerAutoMockCommands() {
       return false;
     },
 
-    onloadstart: event => {},
+    onloadstart: event => {
+    },
 
     onloadend: event => {
       --pendingApiCount;
@@ -317,7 +303,7 @@ function registerAutoMockCommands() {
     while (i--) uri[o.key[i]] = m[i] || "";
 
     uri[o.q.name] = {};
-    uri[o.key[12]].replace(o.q.parser, function($0, $1, $2) {
+    uri[o.key[12]].replace(o.q.parser, function ($0, $1, $2) {
       if ($1) uri[o.q.name][$1] = $2;
     });
 

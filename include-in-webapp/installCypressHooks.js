@@ -293,6 +293,8 @@ FakeXMLHttpRequest.prototype = {
         setTimeout(handleResponse, item.responseTime);
       } else if (typeof item.responseTime === 'object' && item.responseTime.length === 2) {
         setTimeout(handleResponse, Math.random() * (item.responseTime[1] - item.responseTime[0]) + item.responseTime[0]);
+      } else if (item.readyState === FakeXMLHttpRequest.UNSENT) {
+        return;
       } else {
         handleResponse();
       }
