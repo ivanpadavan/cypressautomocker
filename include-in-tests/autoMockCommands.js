@@ -25,6 +25,13 @@ function registerAutoMockCommands() {
   var pendingApiCount = 0;
   let automocker = null;
 
+  const resetAutomockPendingCounter = window.Cypress.resetAutomockPendingCounter = () => {
+    completedPendingRequestsFunc && completedPendingRequestsFunc();
+    completedPendingRequestsFunc = null;
+    pendingApiCount = 0;
+    console.log('reset');
+  }
+
   Cypress.Commands.add("automock", (sessionName, options) => {
     const automockRecord = Cypress.config().automocker
       ? Cypress.config().automocker.record !== false
@@ -104,6 +111,8 @@ function registerAutoMockCommands() {
       }
     });
   });
+
+  Cypress.Commands.add("resetAutomockPendingCounter", resetAutomockPendingCounter);
 
   Cypress.Commands.add("writeMockServer", () => {
     if (currentMockFileName !== null && recordedApis) {
@@ -229,6 +238,7 @@ function registerAutoMockCommands() {
         );
       }
       ++pendingApiCount;
+      console.log(pendingApiCount);
       return false;
     },
 
@@ -237,6 +247,7 @@ function registerAutoMockCommands() {
 
     onloadend: event => {
       --pendingApiCount;
+      console.log(pendingApiCount);
       if (!pendingApiCount && completedPendingRequestsFunc) {
         completedPendingRequestsFunc();
         completedPendingRequestsFunc = null;

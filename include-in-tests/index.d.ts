@@ -20,12 +20,14 @@ declare global {
   }) => void;
   type automockEnd = () => void;
   type automockWaitOnPendingAPIs = () => void;
+  type resetAutomockPendingCounter = () => void;
 
   namespace Cypress {
     interface Chainable<Subject = any> {
       automock: automock;
       automockEnd: automockEnd;
       automockWaitOnPendingAPIs: automockWaitOnPendingAPIs;
+      resetAutomockPendingCounter: resetAutomockPendingCounter;
     }
   }
 }
